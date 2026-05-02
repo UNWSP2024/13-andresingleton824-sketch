@@ -1,0 +1,86 @@
+import sqlite3
+import os
+ 
+DB_NAME = "cities.db"
+ 
+ 
+def fetch_all_cities(conn):
+    """Return all rows from the cities table, ordered by city name."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM cities ORDER BY city_name")
+    return cursor.fetchall()
+ 
+ 
+def fetch_stats(conn):
+    """Return aggregate statistics across all cities."""
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            COUNT(*)           AS total_cities,
+            SUM(population)    AS total_population,
+            AVG(population)    AS avg_population,
+            MAX(population)    AS largest_pop,
+            MIN(population)    AS smallest_pop,
+            AVG(area_sq_mi)    AS avg_area
+        FROM cities
+    """)
+    return cursor.fetchone()
+ 
+ 
+def display_cities(cities):
+    """Print all cities in a formatted table."""
+    header = f"{'ID':<4} {'City':<16} {'State':<6} {'Population':>12} {'Area (sq mi)':>13}"
+    divider = "-" * len(header)
+ 
+    print("\n" + "=" * len(header))
+    print("            CITIES DATABASE — ALL RECORDS")
+    print("=" * len(header))
+    print(header)
+    print(divider)
+ 
+    for row in cities:
+        city_id, name, state, pop, area = row
+        print(f"{city_id:<4} {name:<16} {state:<6} {pop:>12,} {area:>13.1f}")
+ 
+    print(divider)
+    print(f"  Total records: {len(cities)}")
+ 
+ 
+def display_stats(stats):
+    """Print aggregate statistics."""
+    total, total_pop, avg_pop, max_pop, min_pop, avg_area = stats
+ 
+    print("\n  --- Summary Statistics ---")
+    print(f"  Total cities     : {total}")
+    print(f"  Total population : {total_pop:,}")
+    print(f"  Avg population   : {avg_pop:,.0f}")
+    print(f"  Largest city     : {max_pop:,}")
+    print(f"  Smallest city    : {min_pop:,}")
+    print(f"  Avg area (sq mi) : {avg_area:.1f}")
+    print()
+ 
+ 
+def main():
+    # Verify database exists
+    if not os.path.exists(DB_NAME):
+        print(f"Error: '{DB_NAME}' not found. Run Program 1 first to set up the database.")
+        return
+ 
+    conn = sqlite3.connect(DB_NAME)
+ 
+    cities = fetch_all_cities(conn)
+ 
+    if not cities:
+        print("No records found in the cities table.")
+        conn.close()
+        return
+ 
+    display_cities(cities)
+    stats = fetch_stats(conn)
+    display_stats(stats)
+ 
+    conn.close()
+ 
+ 
+if __name__ == "__main__":
+    main()
