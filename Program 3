@@ -1,0 +1,104 @@
+import sqlite3
+import os
+ 
+DB_NAME = "phone_book.db"
+ 
+ 
+def create_phonebook_database():
+    """Create the phone_book database and populate it with sample contacts."""
+ 
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+ 
+    # Drop existing table for clean setup
+    cursor.execute("DROP TABLE IF EXISTS phone_book")
+ 
+    # Create the phone_book table
+    cursor.execute("""
+        CREATE TABLE phone_book (
+            contact_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name  TEXT NOT NULL,
+            last_name   TEXT NOT NULL,
+            phone       TEXT NOT NULL,
+            email       TEXT,
+            category    TEXT DEFAULT 'Personal'
+        )
+    """)
+ 
+    # Sample contact data
+    sample_contacts = [
+        ("Alice",   "Anderson",  "612-555-0101", "alice.anderson@email.com",  "Personal"),
+        ("Bob",     "Brown",     "651-555-0202", "bob.brown@work.com",        "Work"),
+        ("Carol",   "Chen",      "763-555-0303", "carol.chen@email.com",      "Personal"),
+        ("David",   "Davis",     "952-555-0404", "david.davis@work.com",      "Work"),
+        ("Emma",    "Evans",     "612-555-0505", "emma.evans@email.com",      "Family"),
+        ("Frank",   "Foster",    "651-555-0606", "frank.foster@email.com",    "Personal"),
+        ("Grace",   "Green",     "763-555-0707", "grace.green@school.edu",    "School"),
+        ("Henry",   "Hill",      "952-555-0808", "henry.hill@work.com",       "Work"),
+        ("Iris",    "Ingram",    "612-555-0909", "iris.ingram@email.com",     "Family"),
+        ("Jack",    "Johnson",   "651-555-1010", "jack.johnson@email.com",    "Personal"),
+    ]
+ 
+    cursor.executemany("""
+        INSERT INTO phone_book (first_name, last_name, phone, email, category)
+        VALUES (?, ?, ?, ?, ?)
+    """, sample_contacts)
+ 
+    conn.commit()
+ 
+    cursor.execute("SELECT COUNT(*) FROM phone_book")
+    count = cursor.fetchone()[0]
+ 
+    conn.close()
+    return count
+ 
+ 
+def display_database_info():
+    """Display confirmation that the phone book database is ready."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+ 
+    print("=" * 65)
+    print("       PHONE BOOK DATABASE — SETUP COMPLETE")
+    print("=" * 65)
+    print(f"  Database file : {os.path.abspath(DB_NAME)}")
+    print(f"  File size     : {os.path.getsize(DB_NAME):,} bytes")
+ 
+    # Schema
+    cursor.execute("PRAGMA table_info(phone_book)")
+    columns = cursor.fetchall()
+    print("\n  Table: phone_book")
+    print("  " + "-" * 55)
+    print(f"  {'Column':<15} {'Type':<8} {'PK':<5} {'Nullable':<10} {'Default'}")
+    print("  " + "-" * 55)
+    for col in columns:
+        pk       = "YES" if col[5] else "NO"
+        nullable = "NO"  if col[3] else "YES"
+        default  = col[4] if col[4] else "—"
+        print(f"  {col[1]:<15} {col[2]:<8} {pk:<5} {nullable:<10} {default}")
+ 
+    # Row count
+    cursor.execute("SELECT COUNT(*) FROM phone_book")
+    count = cursor.fetchone()[0]
+    print(f"\n  Rows inserted : {count}")
+ 
+    # Preview
+    cursor.execute("SELECT * FROM phone_book LIMIT 5")
+    rows = cursor.fetchall()
+    print("\n  Sample rows (first 5):")
+    print("  " + "-" * 55)
+    print(f"  {'ID':<4} {'Name':<20} {'Phone':<15} {'Category'}")
+    print("  " + "-" * 55)
+    for row in rows:
+        full_name = f"{row[1]} {row[2]}"
+        print(f"  {row[0]:<4} {full_name:<20} {row[3]:<15} {row[5]}")
+ 
+    print("\n  Database is ready for use.")
+    print("=" * 65)
+ 
+    conn.close()
+ 
+ 
+if __name__ == "__main__":
+    create_phonebook_database()
+    display_database_info()

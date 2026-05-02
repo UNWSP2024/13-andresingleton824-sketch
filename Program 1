@@ -1,0 +1,101 @@
+import sqlite3
+import os
+ 
+DB_NAME = "cities.db"
+ 
+def create_cities_database():
+    """Create the cities database and populate it with sample data."""
+ 
+    # Connect to (or create) the database file
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+ 
+    # Drop table if it exists so setup is idempotent
+    cursor.execute("DROP TABLE IF EXISTS cities")
+ 
+    # Create the cities table
+    cursor.execute("""
+        CREATE TABLE cities (
+            city_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+            city_name   TEXT    NOT NULL,
+            state       TEXT    NOT NULL,
+            population  INTEGER NOT NULL,
+            area_sq_mi  REAL    NOT NULL
+        )
+    """)
+ 
+    # Sample city data
+    sample_data = [
+        ("New York",      "NY", 8336817,  302.6),
+        ("Los Angeles",   "CA", 3979576,  502.7),
+        ("Chicago",       "IL", 2693976,  227.7),
+        ("Houston",       "TX", 2320268,  669.0),
+        ("Phoenix",       "AZ", 1680992,  517.6),
+        ("Philadelphia",  "PA", 1584138,  142.7),
+        ("San Antonio",   "TX", 1547253,  461.0),
+        ("San Diego",     "CA", 1423851,  372.1),
+        ("Dallas",        "TX", 1343573,  385.8),
+        ("Minneapolis",   "MN",  429954,   58.4),
+    ]
+ 
+    cursor.executemany("""
+        INSERT INTO cities (city_name, state, population, area_sq_mi)
+        VALUES (?, ?, ?, ?)
+    """, sample_data)
+ 
+    conn.commit()
+ 
+    # Verify: count rows inserted
+    cursor.execute("SELECT COUNT(*) FROM cities")
+    count = cursor.fetchone()[0]
+ 
+    conn.close()
+    return count
+ 
+ 
+def display_database_info():
+    """Display confirmation that the database is ready."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+ 
+    print("=" * 60)
+    print("       CITIES DATABASE — SETUP COMPLETE")
+    print("=" * 60)
+    print(f"  Database file : {os.path.abspath(DB_NAME)}")
+    print(f"  File size     : {os.path.getsize(DB_NAME):,} bytes")
+ 
+    # Show table schema
+    cursor.execute("PRAGMA table_info(cities)")
+    columns = cursor.fetchall()
+    print("\n  Table: cities")
+    print("  " + "-" * 50)
+    print(f"  {'Column':<15} {'Type':<10} {'PK':<5} {'Nullable'}")
+    print("  " + "-" * 50)
+    for col in columns:
+        pk      = "YES" if col[5] else "NO"
+        nullable = "NO"  if col[3] else "YES"
+        print(f"  {col[1]:<15} {col[2]:<10} {pk:<5} {nullable}")
+ 
+    # Show row count
+    cursor.execute("SELECT COUNT(*) FROM cities")
+    count = cursor.fetchone()[0]
+    print(f"\n  Rows inserted : {count}")
+ 
+    # Preview first few rows
+    cursor.execute("SELECT * FROM cities LIMIT 5")
+    rows = cursor.fetchall()
+    print("\n  Sample rows (first 5):")
+    print("  " + "-" * 50)
+    print(f"  {'ID':<4} {'City':<16} {'ST':<4} {'Population':>12} {'Area (sq mi)':>13}")
+    print("  " + "-" * 50)
+    for row in rows:
+        print(f"  {row[0]:<4} {row[1]:<16} {row[2]:<4} {row[3]:>12,} {row[4]:>13.1f}")
+ 
+    print("\n  Database is ready for use.")
+    print("=" * 60)
+ 
+    conn.close()
+ 
+ 
+if __name__ == "__main__":
+    create_cities_database()
